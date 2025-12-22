@@ -1,0 +1,28 @@
+[package]
+name = "revelation-server"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "revelation-server"
+path = "src/main.rs"
+
+[dependencies]
+revelation-shared = { git = "https://github.com/Revelation-Path/revelation-shared.git", features = ["db", "backend"] }
+revelation-bible = { git = "https://github.com/Revelation-Path/revelation-bible.git" }
+revelation-songbook = { git = "https://github.com/Revelation-Path/revelation-songbook.git", features = ["db"] }
+
+axum = "0.8"
+tower = { version = "0.5", features = ["full"] }
+tower-http = { version = "0.6", features = ["cors", "trace", "compression-gzip"] }
+tokio = { version = "1", features = ["full"] }
+sqlx = { version = "0.8", features = ["runtime-tokio", "postgres", "uuid", "chrono", "json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1", features = ["v4", "v7", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+dotenvy = "0.15"
+masterror = { version = "0.26", features = ["axum", "sqlx", "validator", "tracing"] }
+validator = { version = "0.20", features = ["derive"] }
