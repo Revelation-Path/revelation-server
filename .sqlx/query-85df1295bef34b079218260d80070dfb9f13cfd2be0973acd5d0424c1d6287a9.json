@@ -1,0 +1,60 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                id, name, name_ru, abbreviation,\n                testament as \"testament: Testament\",\n                chapters_count\n            FROM bible_books\n            ORDER BY id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "name_ru",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "abbreviation",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "testament: Testament",
+        "type_info": {
+          "Custom": {
+            "name": "testament",
+            "kind": {
+              "Enum": [
+                "old",
+                "new"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "chapters_count",
+        "type_info": "Int2"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "85df1295bef34b079218260d80070dfb9f13cfd2be0973acd5d0424c1d6287a9"
+}

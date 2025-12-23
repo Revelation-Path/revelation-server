@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT chapter, verse_count\n            FROM bible_chapter_info\n            WHERE book_id = $1\n            ORDER BY chapter\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "chapter",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 1,
+        "name": "verse_count",
+        "type_info": "Int2"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int2"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "a650f5a4b76222c721df8bb614de4403a2b41333e727bcf7e1a0513d6c9ac8d9"
+}

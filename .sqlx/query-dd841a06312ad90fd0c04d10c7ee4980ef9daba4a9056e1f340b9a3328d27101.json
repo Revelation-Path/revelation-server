@@ -1,0 +1,152 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                sb.id, sb.code, sb.name, sb.name_ru, sb.description, sb.cover_url,\n                sb.songs_count,\n                COALESCE((SELECT COUNT(*) FROM songs s WHERE s.songbook_id = sb.id AND s.has_chords = true), 0)::int as \"songs_with_chords_count!\",\n                sb.is_public,\n                sb.year_first_published, sb.year_latest_edition, sb.edition_name, sb.total_songs_in_print,\n                sb.publisher, sb.editor, sb.isbn, sb.language, sb.country, sb.denomination,\n                sb.website_url, sb.purchase_url, sb.history, sb.notes\n            FROM songbooks sb\n            WHERE sb.is_public = true\n            ORDER BY sb.name_ru\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "name_ru",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "cover_url",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "songs_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "songs_with_chords_count!",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "is_public",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 9,
+        "name": "year_first_published",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 10,
+        "name": "year_latest_edition",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 11,
+        "name": "edition_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 12,
+        "name": "total_songs_in_print",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 13,
+        "name": "publisher",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 14,
+        "name": "editor",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 15,
+        "name": "isbn",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 16,
+        "name": "language",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 17,
+        "name": "country",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 18,
+        "name": "denomination",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 19,
+        "name": "website_url",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 20,
+        "name": "purchase_url",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 21,
+        "name": "history",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 22,
+        "name": "notes",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      null,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "dd841a06312ad90fd0c04d10c7ee4980ef9daba4a9056e1f340b9a3328d27101"
+}

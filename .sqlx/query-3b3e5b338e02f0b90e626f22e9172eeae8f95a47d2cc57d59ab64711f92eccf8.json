@@ -1,0 +1,48 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT id, book_id, chapter, verse, text\n            FROM bible_verses\n            WHERE book_id = $1 AND chapter = $2 AND verse = $3\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "book_id",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 2,
+        "name": "chapter",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 3,
+        "name": "verse",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 4,
+        "name": "text",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int2",
+        "Int2",
+        "Int2"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "3b3e5b338e02f0b90e626f22e9172eeae8f95a47d2cc57d59ab64711f92eccf8"
+}

@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT id, songbook_id, edition_name, year_published, songs_count, publisher, isbn, notes\n            FROM songbook_editions\n            WHERE songbook_id = $1\n            ORDER BY year_published DESC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "songbook_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "edition_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "year_published",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 4,
+        "name": "songs_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 5,
+        "name": "publisher",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "isbn",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "notes",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "82a6f46dfb54089f9f01c610a44c648f57e935aed2e350a19d75946d4dce72df"
+}

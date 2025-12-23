@@ -4,7 +4,9 @@ use axum::{
     routing::{get, post, put}
 };
 use masterror::prelude::*;
-use revelation_shared::{Church, CreateChurch, JoinChurch, Membership, UpdateChurch, UpdateMemberRole};
+use revelation_shared::{
+    Church, CreateChurch, JoinChurch, Membership, UpdateChurch, UpdateMemberRole
+};
 use uuid::Uuid;
 
 use crate::state::AppState;

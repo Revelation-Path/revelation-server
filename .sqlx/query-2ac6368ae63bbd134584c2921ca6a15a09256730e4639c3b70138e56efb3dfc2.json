@@ -1,0 +1,102 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO posts (id, author_id, church_id, post_type, title, content, media_urls)\n        VALUES ($1, $2, $3, $4, $5, $6, $7)\n        RETURNING\n            id,\n            author_id,\n            church_id,\n            post_type as \"post_type: _\",\n            title,\n            content,\n            media_urls,\n            created_at,\n            updated_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "author_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "church_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "post_type: _",
+        "type_info": {
+          "Custom": {
+            "name": "post_type",
+            "kind": {
+              "Enum": [
+                "sermon",
+                "discussion",
+                "testimony",
+                "prayer",
+                "event"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "content",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "media_urls",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 7,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        {
+          "Custom": {
+            "name": "post_type",
+            "kind": {
+              "Enum": [
+                "sermon",
+                "discussion",
+                "testimony",
+                "prayer",
+                "event"
+              ]
+            }
+          }
+        },
+        "Varchar",
+        "Text",
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "2ac6368ae63bbd134584c2921ca6a15a09256730e4639c3b70138e56efb3dfc2"
+}

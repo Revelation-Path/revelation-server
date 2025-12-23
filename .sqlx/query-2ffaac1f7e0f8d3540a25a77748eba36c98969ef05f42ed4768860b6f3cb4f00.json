@@ -1,0 +1,83 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            id,\n            author_id,\n            church_id,\n            post_type as \"post_type: _\",\n            title,\n            content,\n            media_urls,\n            created_at,\n            updated_at\n        FROM posts\n        WHERE id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "author_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "church_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "post_type: _",
+        "type_info": {
+          "Custom": {
+            "name": "post_type",
+            "kind": {
+              "Enum": [
+                "sermon",
+                "discussion",
+                "testimony",
+                "prayer",
+                "event"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "content",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "media_urls",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 7,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "2ffaac1f7e0f8d3540a25a77748eba36c98969ef05f42ed4768860b6f3cb4f00"
+}

@@ -3,14 +3,16 @@ name = "revelation-server"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+name = "revelation_server"
+path = "src/lib.rs"
+
 [[bin]]
 name = "revelation-server"
 path = "src/main.rs"
 
 [dependencies]
-revelation-shared = { git = "https://github.com/Revelation-Path/revelation-shared.git", features = ["db", "backend"] }
-revelation-bible = { git = "https://github.com/Revelation-Path/revelation-bible.git" }
-revelation-songbook = { git = "https://github.com/Revelation-Path/revelation-songbook.git", features = ["db"] }
+revelation-shared = { path = "../revelation-shared", features = ["db", "backend"] }
 
 axum = "0.8"
 tower = { version = "0.5", features = ["full"] }

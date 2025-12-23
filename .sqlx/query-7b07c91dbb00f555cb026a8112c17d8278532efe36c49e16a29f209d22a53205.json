@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT v.id, v.book_id, v.chapter, v.verse, v.text\n            FROM daily_reading_verses drv\n            JOIN bible_verses v ON v.id = drv.verse_id\n            WHERE drv.daily_reading_id = $1\n            ORDER BY drv.position\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "book_id",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 2,
+        "name": "chapter",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 3,
+        "name": "verse",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 4,
+        "name": "text",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "7b07c91dbb00f555cb026a8112c17d8278532efe36c49e16a29f209d22a53205"
+}

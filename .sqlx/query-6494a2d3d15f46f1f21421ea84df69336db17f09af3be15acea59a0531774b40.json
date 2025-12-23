@@ -1,0 +1,97 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            p.id,\n            p.author_id,\n            u.name as author_name,\n            p.church_id,\n            c.name as church_name,\n            p.post_type as \"post_type: _\",\n            p.title,\n            p.content,\n            p.media_urls,\n            p.created_at,\n            p.updated_at\n        FROM posts p\n        JOIN users u ON u.id = p.author_id\n        LEFT JOIN churches c ON c.id = p.church_id\n        WHERE ($1::uuid IS NULL AND p.church_id IS NULL) OR p.church_id = $1\n        ORDER BY p.created_at DESC\n        LIMIT $2 OFFSET $3\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "author_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "author_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "church_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "church_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "post_type: _",
+        "type_info": {
+          "Custom": {
+            "name": "post_type",
+            "kind": {
+              "Enum": [
+                "sermon",
+                "discussion",
+                "testimony",
+                "prayer",
+                "event"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "content",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "media_urls",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6494a2d3d15f46f1f21421ea84df69336db17f09af3be15acea59a0531774b40"
+}

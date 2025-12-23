@@ -1,0 +1,53 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                v.id, v.book_id, v.chapter, v.verse, v.text,\n                b.name_ru as book_name\n            FROM bible_word_index w\n            JOIN bible_verses v ON v.id = w.verse_id\n            JOIN bible_books b ON b.id = v.book_id\n            WHERE w.word = lower($1)\n            ORDER BY v.book_id, v.chapter, v.verse\n            LIMIT $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "book_id",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 2,
+        "name": "chapter",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 3,
+        "name": "verse",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 4,
+        "name": "text",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "book_name",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "a7f0b65ce3c911da7dd69988b95b6859e1b5fae42f2d4436ce386c278e7ba115"
+}

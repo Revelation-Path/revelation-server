@@ -6,13 +6,12 @@ use axum::{
     routing::{delete, get, post}
 };
 use masterror::prelude::*;
-use serde::Deserialize;
 use revelation_shared::{
     AddToPlaylist, CreatePlaylist, CreateSong, PlaylistItem, Song, SongCategory, SongFilters,
     SongHistoryEntry, SongPlaylist, SongSearchResult, SongSortBy, SongSummary, SongTag, Songbook,
-    SongbookEdition, UpdateSong
+    SongbookEdition, UpdateSong, transpose_content, transpose_key
 };
-use revelation_songbook::transpose_content;
+use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::state::AppState;
@@ -116,7 +115,7 @@ struct SongListQuery {
     #[serde(default)]
     offset:      Option<i64>,
     sort_by:     Option<SongSortBy>,
-    user_id:     Option<Uuid> // TODO: get from auth
+    user_id:     Option<Uuid>
 }
 
 /// List songs with filters
@@ -186,12 +185,10 @@ async fn get_song_transposed(
 ) -> AppResult<Json<Song>> {
     let mut song = state.songs.get_song(id, query.user_id).await?;
 
-    // Transpose content
     song.content = transpose_content(&song.content, semitones);
 
-    // Update displayed key
-    if let Some(ref key) = song.original_key {
-        song.original_key = Some(revelation_songbook::transpose_key(key, semitones, false));
+    if let Some(key) = &song.original_key {
+        song.original_key = Some(transpose_key(key, semitones, false));
     }
 
     Ok(Json(song))
@@ -277,7 +274,7 @@ async fn list_tags(State(state): State<AppState>) -> AppResult<Json<Vec<SongTag>
 
 #[derive(Debug, Deserialize)]
 struct FavoritesQuery {
-    user_id: Uuid // Required for favorites
+    user_id: Uuid
 }
 
 /// List user's favorite songs
