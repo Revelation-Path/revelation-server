@@ -1,5 +1,5 @@
 use masterror::AppResult;
-use revelation_shared::{TelegramRecipient, ports::NotificationRepository};
+use revelation_user::{TelegramRecipient, ports::NotificationRepository};
 use sqlx::PgPool;
 
 /// PostgreSQL implementation of NotificationRepository

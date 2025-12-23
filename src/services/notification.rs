@@ -1,5 +1,5 @@
 use masterror::AppResult;
-use revelation_shared::TelegramRecipient;
+use revelation_user::TelegramRecipient;
 use sqlx::PgPool;
 
 use crate::adapters::postgres::PgNotificationRepository;
@@ -19,7 +19,7 @@ impl NotificationService {
 
     /// Get all users who want Telegram notifications
     pub async fn get_telegram_recipients(&self) -> AppResult<Vec<TelegramRecipient>> {
-        use revelation_shared::ports::NotificationRepository;
+        use revelation_user::ports::NotificationRepository;
         PgNotificationRepository::new(self.pool.clone())
             .get_telegram_recipients()
             .await

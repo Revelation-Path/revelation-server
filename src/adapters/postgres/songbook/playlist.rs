@@ -1,5 +1,5 @@
 use masterror::AppResult;
-use revelation_shared::{
+use revelation_songbook::{
     AddToPlaylist, CreatePlaylist, PlaylistItem, SongCategory, SongPlaylist, SongSummary,
     ports::PlaylistRepository
 };

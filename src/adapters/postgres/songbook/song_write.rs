@@ -1,5 +1,5 @@
 use masterror::AppResult;
-use revelation_shared::{
+use revelation_songbook::{
     CreateSong, Song, UpdateSong,
     ports::{SongRead, SongWrite}
 };

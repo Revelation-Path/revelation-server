@@ -1,5 +1,5 @@
 use masterror::AppResult;
-use revelation_shared::{SearchResult, Verse, ports::BibleSearch};
+use revelation_bible::{SearchResult, Verse, ports::BibleSearch};
 use sqlx::PgPool;
 
 /// PostgreSQL implementation of BibleSearch

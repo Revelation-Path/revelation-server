@@ -12,7 +12,12 @@ name = "revelation-server"
 path = "src/main.rs"
 
 [dependencies]
-revelation-shared = { path = "../revelation-shared", features = ["db", "backend"] }
+revelation-bible = { path = "../revelation-bible", features = ["db", "backend"] }
+revelation-songbook = { path = "../revelation-songbook", features = ["db", "backend"] }
+revelation-user = { path = "../revelation-user", features = ["db", "backend"] }
+revelation-church = { path = "../revelation-church", features = ["db"] }
+revelation-post = { path = "../revelation-post", features = ["db"] }
+revelation-religion = { path = "../revelation-religion", features = ["db"] }
 
 axum = "0.8"
 tower = { version = "0.5", features = ["full"] }

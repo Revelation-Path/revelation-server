@@ -4,7 +4,7 @@ use axum::{
     routing::{get, post, put}
 };
 use masterror::prelude::*;
-use revelation_shared::{BindEmail, BindPhone, BindTelegram, CreateUser, UpdateUserProfile, User};
+use revelation_user::{BindEmail, BindPhone, BindTelegram, CreateUser, UpdateUserProfile, User};
 use uuid::Uuid;
 
 use crate::state::AppState;

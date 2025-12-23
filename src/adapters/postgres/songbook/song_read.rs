@@ -1,5 +1,5 @@
 use masterror::AppResult;
-use revelation_shared::{
+use revelation_songbook::{
     Song, SongCategory, SongFilters, SongSortBy, SongSummary, SongTag, ports::SongRead
 };
 use sqlx::PgPool;

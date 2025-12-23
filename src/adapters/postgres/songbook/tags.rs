@@ -1,5 +1,5 @@
 use masterror::AppResult;
-use revelation_shared::{SongTag, ports::SongTags};
+use revelation_songbook::{SongTag, ports::SongTags};
 use sqlx::PgPool;
 
 /// PostgreSQL implementation of SongTags

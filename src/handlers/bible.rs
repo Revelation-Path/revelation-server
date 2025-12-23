@@ -4,7 +4,7 @@ use axum::{
     routing::get
 };
 use masterror::prelude::*;
-use revelation_shared::{
+use revelation_bible::{
     Book, ChapterInfo, DailyReading, Pericope, SearchResult, Testament, Verse
 };
 use serde::Deserialize;

@@ -1,5 +1,5 @@
 use masterror::AppResult;
-use revelation_shared::{Book, ChapterInfo, Pericope, Testament, Verse, ports::BibleRepository};
+use revelation_bible::{Book, ChapterInfo, Pericope, Testament, Verse, ports::BibleRepository};
 use sqlx::PgPool;
 
 /// PostgreSQL implementation of BibleRepository

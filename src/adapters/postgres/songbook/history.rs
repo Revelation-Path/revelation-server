@@ -1,5 +1,5 @@
 use masterror::AppResult;
-use revelation_shared::{SongCategory, SongHistoryEntry, SongSummary, ports::SongHistory};
+use revelation_songbook::{SongCategory, SongHistoryEntry, SongSummary, ports::SongHistory};
 use sqlx::PgPool;
 use uuid::Uuid;
 

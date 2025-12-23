@@ -1,6 +1,6 @@
 use chrono::{Datelike, NaiveDate};
 use masterror::AppResult;
-use revelation_shared::{
+use revelation_bible::{
     DailyReading, Verse,
     ports::{ReadingPlan, VerseResponseWithUser}
 };

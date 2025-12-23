@@ -4,7 +4,7 @@ use axum::{
     routing::{get, post, put}
 };
 use masterror::prelude::*;
-use revelation_shared::{
+use revelation_church::{
     Church, CreateChurch, JoinChurch, Membership, UpdateChurch, UpdateMemberRole
 };
 use uuid::Uuid;
@@ -151,7 +151,7 @@ pub struct MemberWithUser {
     user_id:   Uuid,
     user_name: Option<String>,
     church_id: Uuid,
-    role:      revelation_shared::ChurchRole,
+    role:      revelation_church::ChurchRole,
     joined_at: chrono::DateTime<chrono::Utc>
 }
 

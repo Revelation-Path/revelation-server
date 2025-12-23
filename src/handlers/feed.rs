@@ -4,7 +4,7 @@ use axum::{
     routing::{get, post}
 };
 use masterror::prelude::*;
-use revelation_shared::{CreateComment, CreatePost, Post, PostComment};
+use revelation_post::{CreateComment, CreatePost, Post, PostComment};
 use uuid::Uuid;
 
 use crate::state::AppState;
@@ -75,7 +75,7 @@ pub struct PostWithAuthor {
     author_name: Option<String>,
     church_id:   Option<Uuid>,
     church_name: Option<String>,
-    post_type:   revelation_shared::PostType,
+    post_type:   revelation_post::PostType,
     title:       String,
     content:     String,
     media_urls:  Vec<String>,

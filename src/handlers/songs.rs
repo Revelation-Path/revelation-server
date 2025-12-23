@@ -6,7 +6,7 @@ use axum::{
     routing::{delete, get, post}
 };
 use masterror::prelude::*;
-use revelation_shared::{
+use revelation_songbook::{
     AddToPlaylist, CreatePlaylist, CreateSong, PlaylistItem, Song, SongCategory, SongFilters,
     SongHistoryEntry, SongPlaylist, SongSearchResult, SongSortBy, SongSummary, SongTag, Songbook,
     SongbookEdition, UpdateSong, transpose_content, transpose_key

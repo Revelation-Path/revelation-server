@@ -1,4 +1,4 @@
-use revelation_shared::{SongCategory, SongSearchResult, SongSummary};
+use revelation_songbook::{SongCategory, SongSearchResult, SongSummary};
 use uuid::Uuid;
 
 /// Row type for song summary queries
