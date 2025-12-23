@@ -10,7 +10,6 @@ env:
   CARGO_TERM_COLOR: always
   SQLX_OFFLINE: true
   REGISTRY: revelation-registry.registry.twcstorage.ru
-  IMAGE_NAME: revelation-server
 
 jobs:
   lint:
@@ -70,9 +69,16 @@ jobs:
           echo "tag=${VERSION}-${SHORT_SHA}" >> $GITHUB_OUTPUT
 
   build:
-    name: Build
+    name: Build Images
     runs-on: ubuntu-latest
     needs: [lint, test, prepare]
+    strategy:
+      matrix:
+        include:
+          - image: revelation-server
+            dockerfile: Dockerfile
+          - image: revelation-migrate
+            dockerfile: Dockerfile.migrate
     steps:
       - uses: actions/checkout@v4
 
@@ -86,48 +92,57 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build
+      - name: Build and Push
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: false
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache,mode=max
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ matrix.image }}:${{ needs.prepare.outputs.version }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ matrix.image }}:cache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ matrix.image }}:cache,mode=max
           provenance: false
 
-  push:
-    name: Push
+  migrate:
+    name: Run Migrations
     runs-on: ubuntu-latest
     needs: [prepare, build]
-    permissions:
-      packages: write
+    environment: production
+    concurrency:
+      group: db-migrate
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
 
-      - name: Login to Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
 
-      - name: Push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache
-          provenance: false
+      - name: Cleanup old migration jobs
+        run: |
+          kubectl delete jobs -l component=migrate --ignore-not-found=true
+
+      - name: Run migration
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          sed -i "s|image: ${REGISTRY}/revelation-migrate:.*|image: ${REGISTRY}/revelation-migrate:${VERSION}|" \
+            k8s/migrate-job.yaml
+
+          kubectl create -f k8s/migrate-job.yaml --wait=true
+          kubectl wait job -l component=migrate --for=condition=complete --timeout=300s
+          kubectl logs -l component=migrate
 
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    needs: [prepare, push]
+    needs: [prepare, build, migrate]
     permissions:
       contents: write
     environment: production
@@ -151,9 +166,8 @@ jobs:
       - name: Deploy
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
-          REGISTRY: ${{ env.REGISTRY }}
         run: |
-          sed -i "s|image: ${REGISTRY}/${IMAGE_NAME}:.*|image: ${REGISTRY}/${IMAGE_NAME}:${VERSION}|" \
+          sed -i "s|image: ${REGISTRY}/revelation-server:.*|image: ${REGISTRY}/revelation-server:${VERSION}|" \
             k8s/deployment.yaml
           kubectl apply -f k8s/deployment.yaml
           kubectl apply -f k8s/service.yaml
@@ -176,14 +190,17 @@ jobs:
     name: Cleanup Images
     runs-on: ubuntu-latest
     needs: [deploy]
+    strategy:
+      matrix:
+        image: [revelation-server, revelation-migrate]
     steps:
       - name: Cleanup old tags
         env:
           REGISTRY: ${{ env.REGISTRY }}
           USERNAME: ${{ secrets.DOCKER_USERNAME }}
           PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          REPO: ${{ matrix.image }}
         run: |
-          REPO="${{ env.IMAGE_NAME }}"
           TAGS=$(curl -s -u "${USERNAME}:${PASSWORD}" \
             "https://${REGISTRY}/v2/${REPO}/tags/list" | \
             jq -r '.tags[]? // empty' | grep -v '^cache$' | sort -V)

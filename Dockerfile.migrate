@@ -1,0 +1,21 @@
+# syntax=docker/dockerfile:1.9
+# Lightweight image for running database migrations
+
+FROM rust:1.92-slim AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    pkg-config libssl-dev ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && cargo install sqlx-cli --no-default-features --features postgres
+
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates libssl3 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /usr/local/cargo/bin/sqlx /usr/local/bin/
+COPY migrations /migrations
+
+WORKDIR /migrations
+ENTRYPOINT ["sqlx"]
+CMD ["migrate", "run"]

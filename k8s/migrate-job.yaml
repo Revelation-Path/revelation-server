@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: db-migrate-
+  namespace: default
+  labels:
+    app: revelation-server
+    component: migrate
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 1
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      labels:
+        app: revelation-server
+        component: migrate
+    spec:
+      restartPolicy: Never
+      imagePullSecrets:
+        - name: craas-revelation-registry
+      containers:
+        - name: migrate
+          image: revelation-registry.registry.twcstorage.ru/revelation-migrate:0.1.0
+          args: ["migrate", "run"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: revelation-secrets
+                  key: DATABASE_URL

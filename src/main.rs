@@ -30,11 +30,6 @@ async fn main() -> AppResult<()> {
         .connect(&database_url)
         .await?;
 
-    sqlx::migrate!("../../migrations")
-        .run(&pool)
-        .await
-        .map_err(|e: sqlx::migrate::MigrateError| AppError::internal(e.to_string()))?;
-
     let state = AppState::new(pool);
 
     let app = Router::new()
