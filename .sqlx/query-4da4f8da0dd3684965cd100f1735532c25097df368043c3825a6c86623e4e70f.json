@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                    INSERT INTO bible_verses (book_id, chapter, verse, text)\n                    VALUES ($1, $2, $3, $4)\n                    ON CONFLICT (book_id, chapter, verse) DO UPDATE SET text = $4\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int2",
+        "Int2",
+        "Int2",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4da4f8da0dd3684965cd100f1735532c25097df368043c3825a6c86623e4e70f"
+}

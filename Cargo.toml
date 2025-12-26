@@ -1,7 +1,13 @@
 [package]
 name = "revelation-server"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
+
+[features]
+default = ["api", "validate", "postgres"]
+api = []
+validate = []
+postgres = []
 
 [lib]
 name = "revelation_server"
@@ -10,6 +16,10 @@ path = "src/lib.rs"
 [[bin]]
 name = "revelation-server"
 path = "src/main.rs"
+
+[[bin]]
+name = "bible-cli"
+path = "src/bin/bible_cli.rs"
 
 [dependencies]
 revelation-bible = { path = "../revelation-bible", features = ["db", "backend", "api"] }
@@ -35,3 +45,6 @@ masterror = { version = "0.26", features = ["axum", "sqlx", "validator", "tracin
 validator = { version = "0.20", features = ["derive"] }
 utoipa = { version = "5", features = ["uuid", "chrono", "axum_extras"] }
 utoipa-swagger-ui = { version = "9", features = ["axum"] }
+entity-derive = "0.2"
+async-trait = "0.1"
+clap = { version = "4", features = ["derive"] }

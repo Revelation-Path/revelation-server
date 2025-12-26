@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE bible_books b SET chapters_count = (\n                SELECT MAX(chapter) FROM bible_verses WHERE book_id = b.id\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "461e95e5294b39770a4e5eff8122abaf4bd1b9fe23c5848d9037df031ae00820"
+}

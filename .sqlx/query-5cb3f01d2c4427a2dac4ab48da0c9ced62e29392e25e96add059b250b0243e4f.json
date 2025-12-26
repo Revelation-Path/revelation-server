@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM bible_verses",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "5cb3f01d2c4427a2dac4ab48da0c9ced62e29392e25e96add059b250b0243e4f"
+}

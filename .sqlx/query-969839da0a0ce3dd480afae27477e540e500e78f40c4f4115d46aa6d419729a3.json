@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO bible_word_index (word, verse_id, position)\n            SELECT\n                LOWER(REGEXP_REPLACE(word, '[^а-яА-ЯёЁa-zA-Z0-9]', '', 'g')) as word,\n                v.id as verse_id,\n                ROW_NUMBER() OVER (PARTITION BY v.id ORDER BY ordinality)::smallint as position\n            FROM bible_verses v,\n                 LATERAL REGEXP_SPLIT_TO_TABLE(v.text, '\\s+') WITH ORDINALITY AS t(word, ordinality)\n            WHERE LENGTH(REGEXP_REPLACE(word, '[^а-яА-ЯёЁa-zA-Z0-9]', '', 'g')) >= 3\n            ON CONFLICT DO NOTHING\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "969839da0a0ce3dd480afae27477e540e500e78f40c4f4115d46aa6d419729a3"
+}

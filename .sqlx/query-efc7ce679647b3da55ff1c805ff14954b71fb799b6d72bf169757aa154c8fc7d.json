@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM bible_word_index",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "efc7ce679647b3da55ff1c805ff14954b71fb799b6d72bf169757aa154c8fc7d"
+}
