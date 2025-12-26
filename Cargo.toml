@@ -12,9 +12,9 @@ name = "revelation-server"
 path = "src/main.rs"
 
 [dependencies]
-revelation-bible = { path = "../revelation-bible", features = ["db", "backend"] }
-revelation-songbook = { path = "../revelation-songbook", features = ["db", "backend"] }
-revelation-user = { path = "../revelation-user", features = ["db", "backend"] }
+revelation-bible = { path = "../revelation-bible", features = ["db", "backend", "api"] }
+revelation-songbook = { path = "../revelation-songbook", features = ["db", "backend", "api"] }
+revelation-user = { version = "0.1", features = ["postgres", "axum", "api"] }
 revelation-church = { path = "../revelation-church", features = ["db"] }
 revelation-post = { path = "../revelation-post", features = ["db"] }
 revelation-religion = { path = "../revelation-religion", features = ["db"] }
@@ -31,5 +31,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1", features = ["v4", "v7", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 dotenvy = "0.15"
-masterror = { version = "0.26", features = ["axum", "sqlx", "validator", "tracing"] }
+masterror = { version = "0.26", features = ["axum", "sqlx", "validator", "tracing", "openapi"] }
 validator = { version = "0.20", features = ["derive"] }
+utoipa = { version = "5", features = ["uuid", "chrono", "axum_extras"] }
+utoipa-swagger-ui = { version = "9", features = ["axum"] }

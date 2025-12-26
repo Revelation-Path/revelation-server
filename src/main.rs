@@ -5,6 +5,7 @@ use masterror::prelude::*;
 use sqlx::postgres::PgPoolOptions;
 use tower_http::{compression::CompressionLayer, cors::CorsLayer, trace::TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use utoipa_swagger_ui::SwaggerUi;
 
 mod handlers;
 mod middleware;
@@ -35,6 +36,9 @@ async fn main() -> AppResult<()> {
     let app = Router::new()
         .route("/health", axum::routing::get(|| async { "ok" }))
         .nest("/api", handlers::api_routes())
+        .merge(
+            SwaggerUi::new("/swagger-ui").url("/api-doc/openapi.json", handlers::merged_openapi())
+        )
         .with_state(state)
         .layer(CompressionLayer::new())
         .layer(TraceLayer::new_for_http())
@@ -42,6 +46,7 @@ async fn main() -> AppResult<()> {
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     tracing::info!("Server listening on {}", addr);
+    tracing::info!("Swagger UI: http://localhost:3000/swagger-ui");
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;
