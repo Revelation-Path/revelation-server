@@ -77,8 +77,6 @@ jobs:
         include:
           - image: revelation-server
             dockerfile: Dockerfile
-          - image: revelation-migrate
-            dockerfile: Dockerfile.migrate
     steps:
       - uses: actions/checkout@v4
 
@@ -104,45 +102,10 @@ jobs:
           cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ matrix.image }}:cache,mode=max
           provenance: false
 
-  migrate:
-    name: Run Migrations
-    runs-on: ubuntu-latest
-    needs: [prepare, build]
-    environment: production
-    concurrency:
-      group: db-migrate
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v4
-
-      - name: Configure kubeconfig
-        run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
-          chmod 600 ~/.kube/config
-
-      - name: Cleanup old migration jobs
-        run: |
-          kubectl delete jobs -l component=migrate --ignore-not-found=true
-
-      - name: Run migration
-        env:
-          VERSION: ${{ needs.prepare.outputs.version }}
-        run: |
-          sed -i "s|image: ${REGISTRY}/revelation-migrate:.*|image: ${REGISTRY}/revelation-migrate:${VERSION}|" \
-            k8s/migrate-job.yaml
-
-          kubectl create -f k8s/migrate-job.yaml --wait=true
-          kubectl wait job -l component=migrate --for=condition=complete --timeout=300s
-          kubectl logs -l component=migrate
-
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    needs: [prepare, build, migrate]
+    needs: [prepare, build]
     permissions:
       contents: write
     environment: production
@@ -192,7 +155,7 @@ jobs:
     needs: [deploy]
     strategy:
       matrix:
-        image: [revelation-server, revelation-migrate]
+        image: [revelation-server]
     steps:
       - name: Cleanup old tags
         env:
