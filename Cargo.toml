@@ -1,5 +1,4 @@
 # SPDX-FileCopyrightText: 2025-2026 Revelation Team
-# SPDX-FileCopyrightText: 2025-2026 Revelation Team
 #
 # SPDX-License-Identifier: MIT
 
@@ -69,3 +68,4 @@ utoipa-swagger-ui = { version = "9", features = ["axum"] }
 entity-derive = "0.2"
 async-trait = "0.1"
 clap = { version = "4", features = ["derive"] }
+jsonwebtoken = "10"
