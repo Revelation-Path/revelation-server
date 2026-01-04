@@ -22,7 +22,7 @@ name = "bible-cli"
 path = "src/bin/bible_cli.rs"
 
 [dependencies]
-revelation-bible = { version = "0.1", features = ["db", "backend", "api"] }
+revelation-bible = { version = "0.2", features = ["db", "backend", "api"] }
 revelation-songbook = { version = "0.1", features = ["db", "backend", "api"] }
 revelation-user = { version = "0.1", features = ["postgres", "axum", "api"] }
 revelation-church = { version = "0.1", features = ["db"] }
@@ -51,7 +51,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1", features = ["v4", "v7", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 dotenvy = "0.15"
-masterror = { version = "0.26", features = [
+masterror = { version = "0.27", features = [
   "axum",
   "sqlx",
   "validator",
