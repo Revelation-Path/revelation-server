@@ -9,9 +9,13 @@ use axum::{
 };
 use masterror::prelude::*;
 use revelation_post::{CreateComment, CreatePost, Post, PostComment};
+use revelation_user::Claims;
 use uuid::Uuid;
 
 use crate::state::AppState;
+
+/// Maximum posts per request.
+const MAX_LIMIT: i64 = 100;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -32,7 +36,7 @@ pub struct FeedQuery {
     offset:    i64
 }
 
-fn default_limit() -> i64 {
+const fn default_limit() -> i64 {
     20
 }
 
@@ -40,6 +44,8 @@ async fn get_feed(
     State(state): State<AppState>,
     Query(query): Query<FeedQuery>
 ) -> AppResult<Json<Vec<PostWithAuthor>>> {
+    let limit = query.limit.min(MAX_LIMIT);
+
     let posts = sqlx::query_as!(
         PostWithAuthor,
         r#"
@@ -63,7 +69,7 @@ async fn get_feed(
         LIMIT $2 OFFSET $3
         "#,
         query.church_id,
-        query.limit,
+        limit,
         query.offset
     )
     .fetch_all(&state.pool)
@@ -115,11 +121,14 @@ async fn get_post(
     Ok(Json(post))
 }
 
+/// Create a post. Author is taken from JWT claims.
 async fn create_post(
     State(state): State<AppState>,
-    Json(payload): Json<CreatePostRequest>
+    claims: Claims,
+    Json(payload): Json<CreatePost>
 ) -> AppResult<Json<Post>> {
     let id = Uuid::now_v7();
+    let author_id = claims.user_id();
 
     let post = sqlx::query_as!(
         Post,
@@ -138,24 +147,17 @@ async fn create_post(
             updated_at
         "#,
         id,
-        payload.author_id,
-        payload.post.church_id,
-        payload.post.post_type as _,
-        payload.post.title,
-        payload.post.content,
-        &payload.post.media_urls
+        author_id,
+        payload.church_id,
+        payload.post_type as _,
+        payload.title,
+        payload.content,
+        &payload.media_urls
     )
     .fetch_one(&state.pool)
     .await?;
 
     Ok(Json(post))
-}
-
-#[derive(serde::Deserialize)]
-pub struct CreatePostRequest {
-    author_id: Uuid,
-    #[serde(flatten)]
-    post:      CreatePost
 }
 
 async fn get_comments(
@@ -195,12 +197,15 @@ pub struct CommentWithAuthor {
     created_at:  chrono::DateTime<chrono::Utc>
 }
 
+/// Create a comment. Author is taken from JWT claims.
 async fn create_comment(
     State(state): State<AppState>,
+    claims: Claims,
     Path(post_id): Path<Uuid>,
-    Json(payload): Json<CreateCommentRequest>
+    Json(payload): Json<CreateComment>
 ) -> AppResult<Json<PostComment>> {
     let id = Uuid::now_v7();
+    let author_id = claims.user_id();
 
     let comment = sqlx::query_as!(
         PostComment,
@@ -211,18 +216,11 @@ async fn create_comment(
         "#,
         id,
         post_id,
-        payload.author_id,
-        payload.comment.content
+        author_id,
+        payload.content
     )
     .fetch_one(&state.pool)
     .await?;
 
     Ok(Json(comment))
-}
-
-#[derive(serde::Deserialize)]
-pub struct CreateCommentRequest {
-    author_id: Uuid,
-    #[serde(flatten)]
-    comment:   CreateComment
 }
