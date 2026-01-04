@@ -52,7 +52,7 @@ impl JwtValidator for JwtManager {
     fn decode(&self, token: &str) -> Result<Claims, AppError> {
         jsonwebtoken::decode::<Claims>(token, &self.decoding_key, &self.validation)
             .map(|data| data.claims)
-            .map_err(|e| AppError::unauthorized(format!("Invalid token: {e}")))
+            .map_err(|_| AppError::unauthorized("Invalid or expired token"))
     }
 }
 
