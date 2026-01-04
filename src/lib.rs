@@ -8,5 +8,5 @@ pub mod loader;
 pub mod services;
 
 pub use domain::*;
-pub use loader::{BibleLoader, LoadStats};
+pub use loader::{BibleLoader, CrossRefLoader, CrossRefStats, LoadStats};
 pub use services::{BibleService, NotificationService, SongbookService};
