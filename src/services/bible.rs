@@ -1,10 +1,17 @@
+// SPDX-FileCopyrightText: 2025-2026 Revelation Team
+//
+// SPDX-License-Identifier: MIT
+
 use masterror::AppResult;
 use revelation_bible::{
-    Book, ChapterInfo, DailyReading, Pericope, SearchResult, Testament, Verse
+    Book, ChapterInfo, CrossReference, CrossReferenceExpanded, DailyReading, Pericope,
+    SearchResult, Testament, Verse
 };
 use sqlx::PgPool;
 
-use crate::adapters::postgres::{PgBibleRepository, PgBibleSearch, PgReadingPlan};
+use crate::adapters::postgres::{
+    PgBibleCrossReference, PgBibleRepository, PgBibleSearch, PgReadingPlan
+};
 
 /// Bible service combining all bible-related adapters
 #[derive(Clone)]
@@ -91,5 +98,42 @@ impl BibleService {
     pub async fn get_for_day(&self, day: i16) -> AppResult<Option<DailyReading>> {
         use revelation_bible::ports::ReadingPlan;
         PgReadingPlan::new(self.pool.clone()).get_for_day(day).await
+    }
+
+    pub async fn get_cross_references(
+        &self,
+        book_id: i16,
+        chapter: i16,
+        verse: i16,
+        limit: i64
+    ) -> AppResult<Vec<CrossReferenceExpanded>> {
+        use revelation_bible::ports::BibleCrossReference;
+        PgBibleCrossReference::new(self.pool.clone())
+            .get_cross_references(book_id, chapter, verse, limit)
+            .await
+    }
+
+    pub async fn get_reverse_references(
+        &self,
+        book_id: i16,
+        chapter: i16,
+        verse: i16,
+        limit: i64
+    ) -> AppResult<Vec<CrossReferenceExpanded>> {
+        use revelation_bible::ports::BibleCrossReference;
+        PgBibleCrossReference::new(self.pool.clone())
+            .get_reverse_references(book_id, chapter, verse, limit)
+            .await
+    }
+
+    pub async fn get_chapter_references(
+        &self,
+        book_id: i16,
+        chapter: i16
+    ) -> AppResult<Vec<CrossReference>> {
+        use revelation_bible::ports::BibleCrossReference;
+        PgBibleCrossReference::new(self.pool.clone())
+            .get_chapter_references(book_id, chapter)
+            .await
     }
 }

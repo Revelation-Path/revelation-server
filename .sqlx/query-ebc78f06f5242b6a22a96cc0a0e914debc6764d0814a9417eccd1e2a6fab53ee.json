@@ -1,0 +1,79 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                cr.id,\n                cr.from_book_id, cr.from_chapter, cr.from_verse,\n                cr.to_book_id, cr.to_chapter, cr.to_verse_start, cr.to_verse_end,\n                b.name_ru as book_name,\n                COALESCE(\n                    string_agg(v.text, ' ' ORDER BY v.verse),\n                    ''\n                ) as \"text!\"\n            FROM bible_cross_refs cr\n            JOIN bible_books b ON b.id = cr.to_book_id\n            LEFT JOIN bible_verses v ON\n                v.book_id = cr.to_book_id\n                AND v.chapter = cr.to_chapter\n                AND v.verse >= cr.to_verse_start\n                AND v.verse <= COALESCE(cr.to_verse_end, cr.to_verse_start)\n            WHERE cr.from_book_id = $1\n              AND cr.from_chapter = $2\n              AND cr.from_verse = $3\n            GROUP BY cr.id, b.name_ru\n            ORDER BY cr.to_book_id, cr.to_chapter, cr.to_verse_start\n            LIMIT $4\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "from_book_id",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 2,
+        "name": "from_chapter",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 3,
+        "name": "from_verse",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 4,
+        "name": "to_book_id",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 5,
+        "name": "to_chapter",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 6,
+        "name": "to_verse_start",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 7,
+        "name": "to_verse_end",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 8,
+        "name": "book_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "text!",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int2",
+        "Int2",
+        "Int2",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      null
+    ]
+  },
+  "hash": "ebc78f06f5242b6a22a96cc0a0e914debc6764d0814a9417eccd1e2a6fab53ee"
+}

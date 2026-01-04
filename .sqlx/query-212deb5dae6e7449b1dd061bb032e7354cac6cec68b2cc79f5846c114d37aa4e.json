@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                INSERT INTO bible_cross_refs\n                    (from_book_id, from_chapter, from_verse,\n                     to_book_id, to_chapter, to_verse_start, to_verse_end, weight)\n                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int2",
+        "Int2",
+        "Int2",
+        "Int2",
+        "Int2",
+        "Int2",
+        "Int2",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "212deb5dae6e7449b1dd061bb032e7354cac6cec68b2cc79f5846c114d37aa4e"
+}

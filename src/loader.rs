@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025-2026 Revelation Team
+//
+// SPDX-License-Identifier: MIT
+
 //! Bible data loader from JSON files.
 
 use std::path::Path;
@@ -6,7 +10,7 @@ use masterror::prelude::*;
 use serde::Deserialize;
 use sqlx::PgPool;
 
-/// Book abbreviation mapping to database IDs
+/// Book abbreviation mapping to database IDs (thiagobodruk/bible format)
 const BOOK_MAPPING: &[(&str, i16)] = &[
     // Old Testament
     ("gn", 1),    // Genesis
@@ -247,6 +251,235 @@ impl std::fmt::Display for LoadStats {
             f,
             "Loaded {} books, {} verses ({} skipped)",
             self.books_loaded, self.verses_loaded, self.skipped_books
+        )
+    }
+}
+
+/// OpenBible.info book abbreviation mapping to database IDs
+const OPENBIBLE_MAPPING: &[(&str, i16)] = &[
+    // Old Testament
+    ("Gen", 1),
+    ("Exod", 2),
+    ("Lev", 3),
+    ("Num", 4),
+    ("Deut", 5),
+    ("Josh", 6),
+    ("Judg", 7),
+    ("Ruth", 8),
+    ("1Sam", 9),
+    ("2Sam", 10),
+    ("1Kgs", 11),
+    ("2Kgs", 12),
+    ("1Chr", 13),
+    ("2Chr", 14),
+    ("Ezra", 15),
+    ("Neh", 16),
+    ("Esth", 17),
+    ("Job", 18),
+    ("Ps", 19),
+    ("Prov", 20),
+    ("Eccl", 21),
+    ("Song", 22),
+    ("Isa", 23),
+    ("Jer", 24),
+    ("Lam", 25),
+    ("Ezek", 26),
+    ("Dan", 27),
+    ("Hos", 28),
+    ("Joel", 29),
+    ("Amos", 30),
+    ("Obad", 31),
+    ("Jonah", 32),
+    ("Mic", 33),
+    ("Nah", 34),
+    ("Hab", 35),
+    ("Zeph", 36),
+    ("Hag", 37),
+    ("Zech", 38),
+    ("Mal", 39),
+    // New Testament
+    ("Matt", 40),
+    ("Mark", 41),
+    ("Luke", 42),
+    ("John", 43),
+    ("Acts", 44),
+    ("Rom", 45),
+    ("1Cor", 46),
+    ("2Cor", 47),
+    ("Gal", 48),
+    ("Eph", 49),
+    ("Phil", 50),
+    ("Col", 51),
+    ("1Thess", 52),
+    ("2Thess", 53),
+    ("1Tim", 54),
+    ("2Tim", 55),
+    ("Titus", 56),
+    ("Phlm", 57),
+    ("Heb", 58),
+    ("Jas", 59),
+    ("1Pet", 60),
+    ("2Pet", 61),
+    ("1John", 62),
+    ("2John", 63),
+    ("3John", 64),
+    ("Jude", 65),
+    ("Rev", 66)
+];
+
+/// Parsed verse reference
+struct VerseRef {
+    book_id:     i16,
+    chapter:     i16,
+    verse_start: i16,
+    verse_end:   Option<i16>
+}
+
+/// Loads cross-references from OpenBible.info format
+pub struct CrossRefLoader {
+    pool: PgPool
+}
+
+impl CrossRefLoader {
+    pub fn new(pool: PgPool) -> Self {
+        Self {
+            pool
+        }
+    }
+
+    /// Load cross-references from OpenBible.info TSV file
+    pub async fn load_from_file(&self, path: impl AsRef<Path>) -> AppResult<CrossRefStats> {
+        let content = std::fs::read_to_string(path.as_ref())
+            .map_err(|e| AppError::internal(format!("Failed to read file: {e}")))?;
+
+        let mut stats = CrossRefStats::default();
+
+        // Clear existing cross-references
+        sqlx::query!("DELETE FROM bible_cross_refs")
+            .execute(&self.pool)
+            .await?;
+
+        for line in content.lines() {
+            // Skip header and comments
+            if line.starts_with("From") || line.starts_with('#') || line.is_empty() {
+                continue;
+            }
+
+            let parts: Vec<&str> = line.split('\t').collect();
+            if parts.len() < 3 {
+                stats.skipped += 1;
+                continue;
+            }
+
+            let from_ref = match self.parse_verse_ref(parts[0]) {
+                Some(r) => r,
+                None => {
+                    stats.skipped += 1;
+                    continue;
+                }
+            };
+
+            let to_ref = match self.parse_verse_ref(parts[1]) {
+                Some(r) => r,
+                None => {
+                    stats.skipped += 1;
+                    continue;
+                }
+            };
+
+            let weight: i32 = parts[2].parse().unwrap_or(0);
+
+            if sqlx::query!(
+                r#"
+                INSERT INTO bible_cross_refs
+                    (from_book_id, from_chapter, from_verse,
+                     to_book_id, to_chapter, to_verse_start, to_verse_end, weight)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                "#,
+                from_ref.book_id,
+                from_ref.chapter,
+                from_ref.verse_start,
+                to_ref.book_id,
+                to_ref.chapter,
+                to_ref.verse_start,
+                to_ref.verse_end,
+                weight
+            )
+            .execute(&self.pool)
+            .await
+            .is_err()
+            {
+                stats.skipped += 1;
+                continue;
+            }
+
+            stats.loaded += 1;
+
+            if stats.loaded % 10000 == 0 {
+                tracing::info!("Loaded {} cross-references...", stats.loaded);
+            }
+        }
+
+        Ok(stats)
+    }
+
+    /// Parse OpenBible verse reference like "Gen.1.1" or "Ps.89.11-Ps.89.12"
+    fn parse_verse_ref(&self, s: &str) -> Option<VerseRef> {
+        // Handle range: "Ps.89.11-Ps.89.12"
+        if s.contains('-') {
+            let parts: Vec<&str> = s.split('-').collect();
+            if parts.len() == 2 {
+                let start = self.parse_single_ref(parts[0])?;
+                let end = self.parse_single_ref(parts[1])?;
+                return Some(VerseRef {
+                    book_id:     start.book_id,
+                    chapter:     start.chapter,
+                    verse_start: start.verse_start,
+                    verse_end:   Some(end.verse_start)
+                });
+            }
+        }
+
+        self.parse_single_ref(s)
+    }
+
+    /// Parse single reference like "Gen.1.1"
+    fn parse_single_ref(&self, s: &str) -> Option<VerseRef> {
+        let parts: Vec<&str> = s.split('.').collect();
+        if parts.len() < 3 {
+            return None;
+        }
+
+        let book_id = OPENBIBLE_MAPPING
+            .iter()
+            .find(|(abbr, _)| *abbr == parts[0])
+            .map(|(_, id)| *id)?;
+
+        let chapter: i16 = parts[1].parse().ok()?;
+        let verse: i16 = parts[2].parse().ok()?;
+
+        Some(VerseRef {
+            book_id,
+            chapter,
+            verse_start: verse,
+            verse_end: None
+        })
+    }
+}
+
+/// Statistics from cross-reference loading
+#[derive(Debug, Default)]
+pub struct CrossRefStats {
+    pub loaded:  usize,
+    pub skipped: usize
+}
+
+impl std::fmt::Display for CrossRefStats {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Loaded {} cross-references ({} skipped)",
+            self.loaded, self.skipped
         )
     }
 }

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025-2026 Revelation Team
+//
+// SPDX-License-Identifier: MIT
+
 use masterror::AppResult;
 use revelation_songbook::{
     Song, SongCategory, SongFilters, SongSortBy, SongSummary, SongTag, ports::SongRead

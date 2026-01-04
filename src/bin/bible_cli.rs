@@ -1,10 +1,14 @@
+// SPDX-FileCopyrightText: 2025-2026 Revelation Team
+//
+// SPDX-License-Identifier: MIT
+
 //! Bible data management CLI.
 
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 use masterror::prelude::*;
-use revelation_server::loader::BibleLoader;
+use revelation_server::loader::{BibleLoader, CrossRefLoader};
 use sqlx::postgres::PgPoolOptions;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -21,6 +25,12 @@ enum Commands {
     /// Load Bible translation from JSON file
     Load {
         /// Path to JSON file (thiagobodruk/bible format)
+        #[arg(short, long)]
+        file: PathBuf
+    },
+    /// Load cross-references from OpenBible.info TSV file
+    LoadCrossRefs {
+        /// Path to cross_references.txt file
         #[arg(short, long)]
         file: PathBuf
     },
@@ -58,6 +68,16 @@ async fn main() -> AppResult<()> {
 
             tracing::info!("{}", stats);
         }
+        Commands::LoadCrossRefs {
+            file
+        } => {
+            tracing::info!("Loading cross-references from {:?}", file);
+
+            let loader = CrossRefLoader::new(pool);
+            let stats = loader.load_from_file(&file).await?;
+
+            tracing::info!("{}", stats);
+        }
         Commands::Stats => {
             let books: i64 = sqlx::query_scalar!("SELECT COUNT(*) FROM bible_books")
                 .fetch_one(&pool)
@@ -75,10 +95,16 @@ async fn main() -> AppResult<()> {
                     .await?
                     .unwrap_or(0);
 
+            let cross_refs: i64 = sqlx::query_scalar!("SELECT COUNT(*) FROM bible_cross_refs")
+                .fetch_one(&pool)
+                .await?
+                .unwrap_or(0);
+
             println!("Bible Statistics:");
-            println!("  Books:  {books}");
-            println!("  Verses: {verses}");
-            println!("  Words:  {words}");
+            println!("  Books:        {books}");
+            println!("  Verses:       {verses}");
+            println!("  Words:        {words}");
+            println!("  Cross-refs:   {cross_refs}");
         }
     }
 

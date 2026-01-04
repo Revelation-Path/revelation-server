@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025-2026 Revelation Team
+//
+// SPDX-License-Identifier: MIT
+
 //! Song API handlers
 
 use axum::{
@@ -11,11 +15,15 @@ use revelation_songbook::{
     SongHistoryEntry, SongPlaylist, SongSearchResult, SongSortBy, SongSummary, SongTag, Songbook,
     SongbookEdition, UpdateSong, transpose_content, transpose_key
 };
+use revelation_user::{Claims, OptionalClaims};
 use serde::Deserialize;
 use utoipa::{OpenApi, ToSchema};
 use uuid::Uuid;
 
 use crate::state::AppState;
+
+/// Maximum semitones for transposition.
+const MAX_SEMITONES: i32 = 12;
 
 #[derive(OpenApi)]
 #[openapi(paths(
@@ -139,8 +147,7 @@ struct SongListQuery {
     limit:       Option<i64>,
     #[serde(default)]
     offset:      Option<i64>,
-    sort_by:     Option<SongSortBy>,
-    user_id:     Option<Uuid>
+    sort_by:     Option<SongSortBy>
 }
 
 #[utoipa::path(
@@ -150,8 +157,7 @@ struct SongListQuery {
     params(
         ("id" = Uuid, Path, description = "Songbook ID"),
         ("limit" = Option<i64>, Query, description = "Limit results"),
-        ("offset" = Option<i64>, Query, description = "Offset for pagination"),
-        ("user_id" = Option<Uuid>, Query, description = "User ID for favorites")
+        ("offset" = Option<i64>, Query, description = "Offset for pagination")
     ),
     responses(
         (status = 200, description = "Songs in songbook", body = Vec<SongSummary>)
@@ -160,8 +166,11 @@ struct SongListQuery {
 async fn list_songbook_songs(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
-    Query(query): Query<SongListQuery>
+    Query(query): Query<SongListQuery>,
+    OptionalClaims(claims): OptionalClaims
 ) -> AppResult<Json<Vec<SongSummary>>> {
+    let user_id = claims.map(|c| c.user_id());
+
     let filters = SongFilters {
         songbook_id: Some(id),
         limit: query.limit,
@@ -170,7 +179,7 @@ async fn list_songbook_songs(
         ..Default::default()
     };
 
-    let songs = state.songs.list_songs(&filters, query.user_id).await?;
+    let songs = state.songs.list_songs(&filters, user_id).await?;
     Ok(Json(songs))
 }
 
@@ -190,8 +199,7 @@ async fn list_songbook_songs(
         ("search" = Option<String>, Query, description = "Search text"),
         ("limit" = Option<i64>, Query, description = "Limit results"),
         ("offset" = Option<i64>, Query, description = "Offset"),
-        ("sort_by" = Option<String>, Query, description = "Sort by: title, number, created_at"),
-        ("user_id" = Option<Uuid>, Query, description = "User ID for favorites")
+        ("sort_by" = Option<String>, Query, description = "Sort by: title, number, created_at")
     ),
     responses(
         (status = 200, description = "List of songs", body = Vec<SongSummary>)
@@ -199,8 +207,11 @@ async fn list_songbook_songs(
 )]
 async fn list_songs(
     State(state): State<AppState>,
-    Query(query): Query<SongListQuery>
+    Query(query): Query<SongListQuery>,
+    OptionalClaims(claims): OptionalClaims
 ) -> AppResult<Json<Vec<SongSummary>>> {
+    let user_id = claims.map(|c| c.user_id());
+
     let filters = SongFilters {
         songbook_id: query.songbook_id,
         category:    query.category,
@@ -212,19 +223,18 @@ async fn list_songs(
         sort_by:     query.sort_by
     };
 
-    let songs = state.songs.list_songs(&filters, query.user_id).await?;
+    let songs = state.songs.list_songs(&filters, user_id).await?;
     Ok(Json(songs))
 }
 
 #[derive(Debug, Deserialize)]
 struct SearchQuery {
-    q:       String,
+    q:     String,
     #[serde(default = "default_limit")]
-    limit:   i64,
-    user_id: Option<Uuid>
+    limit: i64
 }
 
-fn default_limit() -> i64 {
+const fn default_limit() -> i64 {
     50
 }
 
@@ -234,8 +244,7 @@ fn default_limit() -> i64 {
     path = "/api/songs/search",
     params(
         ("q" = String, Query, description = "Search query"),
-        ("limit" = Option<i64>, Query, description = "Max results (default 50)"),
-        ("user_id" = Option<Uuid>, Query, description = "User ID for favorites")
+        ("limit" = Option<i64>, Query, description = "Max results (default 50)")
     ),
     responses(
         (status = 200, description = "Search results", body = Vec<SongSearchResult>)
@@ -243,18 +252,16 @@ fn default_limit() -> i64 {
 )]
 async fn search_songs(
     State(state): State<AppState>,
-    Query(query): Query<SearchQuery>
+    Query(query): Query<SearchQuery>,
+    OptionalClaims(claims): OptionalClaims
 ) -> AppResult<Json<Vec<SongSearchResult>>> {
+    let user_id = claims.map(|c| c.user_id());
+
     let results = state
         .songs
-        .search_songs(&query.q, query.limit, query.user_id)
+        .search_songs(&query.q, query.limit, user_id)
         .await?;
     Ok(Json(results))
-}
-
-#[derive(Debug, Deserialize)]
-struct UserQuery {
-    user_id: Option<Uuid>
 }
 
 #[utoipa::path(
@@ -262,8 +269,7 @@ struct UserQuery {
     tag = "Songs",
     path = "/api/songs/{id}",
     params(
-        ("id" = Uuid, Path, description = "Song ID"),
-        ("user_id" = Option<Uuid>, Query, description = "User ID for favorites")
+        ("id" = Uuid, Path, description = "Song ID")
     ),
     responses(
         (status = 200, description = "Song details", body = Song),
@@ -273,9 +279,10 @@ struct UserQuery {
 async fn get_song(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
-    Query(query): Query<UserQuery>
+    OptionalClaims(claims): OptionalClaims
 ) -> AppResult<Json<Song>> {
-    let song = state.songs.get_song(id, query.user_id).await?;
+    let user_id = claims.map(|c| c.user_id());
+    let song = state.songs.get_song(id, user_id).await?;
     Ok(Json(song))
 }
 
@@ -285,19 +292,26 @@ async fn get_song(
     path = "/api/songs/{id}/transpose/{semitones}",
     params(
         ("id" = Uuid, Path, description = "Song ID"),
-        ("semitones" = i32, Path, description = "Semitones to transpose (-12 to 12)"),
-        ("user_id" = Option<Uuid>, Query, description = "User ID")
+        ("semitones" = i32, Path, description = "Semitones to transpose (-12 to 12)")
     ),
     responses(
-        (status = 200, description = "Transposed song", body = Song)
+        (status = 200, description = "Transposed song", body = Song),
+        (status = 400, description = "Invalid semitones value")
     )
 )]
 async fn get_song_transposed(
     State(state): State<AppState>,
     Path((id, semitones)): Path<(Uuid, i32)>,
-    Query(query): Query<UserQuery>
+    OptionalClaims(claims): OptionalClaims
 ) -> AppResult<Json<Song>> {
-    let mut song = state.songs.get_song(id, query.user_id).await?;
+    if semitones.abs() > MAX_SEMITONES {
+        return Err(AppError::bad_request(format!(
+            "Semitones must be between -{MAX_SEMITONES} and {MAX_SEMITONES}"
+        )));
+    }
+
+    let user_id = claims.map(|c| c.user_id());
+    let mut song = state.songs.get_song(id, user_id).await?;
 
     song.content = transpose_content(&song.content, semitones);
 
@@ -315,12 +329,14 @@ async fn get_song_transposed(
     request_body = CreateSong,
     responses(
         (status = 200, description = "Created song", body = Song),
-        (status = 400, description = "Validation error")
+        (status = 400, description = "Validation error"),
+        (status = 401, description = "Unauthorized")
     ),
     security(("cookieAuth" = []))
 )]
 async fn create_song(
     State(state): State<AppState>,
+    _claims: Claims,
     Json(song): Json<CreateSong>
 ) -> AppResult<Json<Song>> {
     let created = state.songs.create_song(song).await?;
@@ -337,12 +353,14 @@ async fn create_song(
     request_body = UpdateSong,
     responses(
         (status = 200, description = "Updated song", body = Song),
-        (status = 404, description = "Song not found")
+        (status = 404, description = "Song not found"),
+        (status = 401, description = "Unauthorized")
     ),
     security(("cookieAuth" = []))
 )]
 async fn update_song(
     State(state): State<AppState>,
+    _claims: Claims,
     Path(id): Path<Uuid>,
     Json(song): Json<UpdateSong>
 ) -> AppResult<Json<Song>> {
@@ -359,11 +377,16 @@ async fn update_song(
     ),
     responses(
         (status = 200, description = "Song deleted"),
-        (status = 404, description = "Song not found")
+        (status = 404, description = "Song not found"),
+        (status = 401, description = "Unauthorized")
     ),
     security(("cookieAuth" = []))
 )]
-async fn delete_song(State(state): State<AppState>, Path(id): Path<Uuid>) -> AppResult<()> {
+async fn delete_song(
+    State(state): State<AppState>,
+    _claims: Claims,
+    Path(id): Path<Uuid>
+) -> AppResult<()> {
     state.songs.delete_song(id).await?;
     Ok(())
 }
@@ -407,8 +430,7 @@ struct CategoryInfoFull {
 #[derive(Debug, Deserialize)]
 struct CategoryQuery {
     #[serde(default = "default_limit")]
-    limit:   i64,
-    user_id: Option<Uuid>
+    limit: i64
 }
 
 #[utoipa::path(
@@ -417,8 +439,7 @@ struct CategoryQuery {
     path = "/api/songs/categories/{category}",
     params(
         ("category" = String, Path, description = "Category name"),
-        ("limit" = Option<i64>, Query, description = "Max results"),
-        ("user_id" = Option<Uuid>, Query, description = "User ID")
+        ("limit" = Option<i64>, Query, description = "Max results")
     ),
     responses(
         (status = 200, description = "Songs in category", body = Vec<SongSummary>)
@@ -427,11 +448,13 @@ struct CategoryQuery {
 async fn list_by_category(
     State(state): State<AppState>,
     Path(category): Path<SongCategory>,
-    Query(query): Query<CategoryQuery>
+    Query(query): Query<CategoryQuery>,
+    OptionalClaims(claims): OptionalClaims
 ) -> AppResult<Json<Vec<SongSummary>>> {
+    let user_id = claims.map(|c| c.user_id());
     let songs = state
         .songs
-        .list_by_category(category, query.limit, query.user_id)
+        .list_by_category(category, query.limit, user_id)
         .await?;
     Ok(Json(songs))
 }
@@ -453,39 +476,32 @@ async fn list_tags(State(state): State<AppState>) -> AppResult<Json<Vec<SongTag>
 // Favorites (require auth)
 // ============================================================================
 
-#[derive(Debug, Deserialize)]
-struct FavoritesQuery {
-    user_id: Uuid
-}
-
 async fn list_favorites(
     State(state): State<AppState>,
-    Query(query): Query<FavoritesQuery>
+    claims: Claims
 ) -> AppResult<Json<Vec<SongSummary>>> {
-    let songs = state.songs.list_favorites(query.user_id).await?;
+    let songs = state.songs.list_favorites(claims.user_id()).await?;
     Ok(Json(songs))
-}
-
-#[derive(Debug, Deserialize)]
-struct AddFavoriteQuery {
-    user_id: Uuid
 }
 
 async fn add_favorite(
     State(state): State<AppState>,
-    Path(song_id): Path<Uuid>,
-    Query(query): Query<AddFavoriteQuery>
+    claims: Claims,
+    Path(song_id): Path<Uuid>
 ) -> AppResult<()> {
-    state.songs.add_favorite(query.user_id, song_id).await?;
+    state.songs.add_favorite(claims.user_id(), song_id).await?;
     Ok(())
 }
 
 async fn remove_favorite(
     State(state): State<AppState>,
-    Path(song_id): Path<Uuid>,
-    Query(query): Query<AddFavoriteQuery>
+    claims: Claims,
+    Path(song_id): Path<Uuid>
 ) -> AppResult<()> {
-    state.songs.remove_favorite(query.user_id, song_id).await?;
+    state
+        .songs
+        .remove_favorite(claims.user_id(), song_id)
+        .await?;
     Ok(())
 }
 
@@ -495,20 +511,23 @@ async fn remove_favorite(
 
 #[derive(Debug, Deserialize)]
 struct HistoryQuery {
-    user_id: Uuid,
     #[serde(default = "default_history_limit")]
-    limit:   i64
+    limit: i64
 }
 
-fn default_history_limit() -> i64 {
+const fn default_history_limit() -> i64 {
     20
 }
 
 async fn list_history(
     State(state): State<AppState>,
+    claims: Claims,
     Query(query): Query<HistoryQuery>
 ) -> AppResult<Json<Vec<SongHistoryEntry>>> {
-    let history = state.songs.list_recent(query.user_id, query.limit).await?;
+    let history = state
+        .songs
+        .list_recent(claims.user_id(), query.limit)
+        .await?;
     Ok(Json(history))
 }
 
@@ -516,59 +535,70 @@ async fn list_history(
 // Playlists
 // ============================================================================
 
-#[derive(Debug, Deserialize)]
-struct PlaylistQuery {
-    user_id: Uuid
-}
-
 async fn list_playlists(
     State(state): State<AppState>,
-    Query(query): Query<PlaylistQuery>
+    claims: Claims
 ) -> AppResult<Json<Vec<SongPlaylist>>> {
-    let playlists = state.songs.list_playlists(query.user_id).await?;
+    let playlists = state.songs.list_playlists(claims.user_id()).await?;
     Ok(Json(playlists))
 }
 
 async fn create_playlist(
     State(state): State<AppState>,
-    Query(query): Query<PlaylistQuery>,
+    claims: Claims,
     Json(playlist): Json<CreatePlaylist>
 ) -> AppResult<Json<SongPlaylist>> {
-    let created = state.songs.create_playlist(query.user_id, playlist).await?;
+    let created = state
+        .songs
+        .create_playlist(claims.user_id(), playlist)
+        .await?;
     Ok(Json(created))
 }
 
 async fn get_playlist(
     State(state): State<AppState>,
-    Path(id): Path<Uuid>,
-    Query(query): Query<PlaylistQuery>
+    claims: Claims,
+    Path(id): Path<Uuid>
 ) -> AppResult<Json<SongPlaylist>> {
-    let playlist = state.songs.get_playlist(id, query.user_id).await?;
+    let playlist = state.songs.get_playlist(id, claims.user_id()).await?;
     Ok(Json(playlist))
 }
 
 async fn get_playlist_songs(
     State(state): State<AppState>,
-    Path(id): Path<Uuid>,
-    Query(query): Query<PlaylistQuery>
+    claims: Claims,
+    Path(id): Path<Uuid>
 ) -> AppResult<Json<Vec<PlaylistItem>>> {
-    let items = state.songs.get_playlist_items(id, query.user_id).await?;
+    let items = state.songs.get_playlist_items(id, claims.user_id()).await?;
     Ok(Json(items))
 }
 
 async fn add_to_playlist(
     State(state): State<AppState>,
+    claims: Claims,
     Path(id): Path<Uuid>,
     Json(item): Json<AddToPlaylist>
 ) -> AppResult<()> {
+    let playlist = state.songs.get_playlist(id, claims.user_id()).await?;
+    if playlist.user_id != claims.user_id() {
+        return Err(AppError::forbidden("Not your playlist"));
+    }
     state.songs.add_to_playlist(id, item).await?;
     Ok(())
 }
 
 async fn remove_from_playlist(
     State(state): State<AppState>,
+    claims: Claims,
     Path((playlist_id, item_id)): Path<(Uuid, Uuid)>
 ) -> AppResult<()> {
+    let playlist = state
+        .songs
+        .get_playlist(playlist_id, claims.user_id())
+        .await?;
+    if playlist.user_id != claims.user_id() {
+        return Err(AppError::forbidden("Not your playlist"));
+    }
     state
         .songs
         .remove_from_playlist(playlist_id, item_id)
@@ -578,9 +608,9 @@ async fn remove_from_playlist(
 
 async fn delete_playlist(
     State(state): State<AppState>,
-    Path(id): Path<Uuid>,
-    Query(query): Query<PlaylistQuery>
+    claims: Claims,
+    Path(id): Path<Uuid>
 ) -> AppResult<()> {
-    state.songs.delete_playlist(id, query.user_id).await?;
+    state.songs.delete_playlist(id, claims.user_id()).await?;
     Ok(())
 }
