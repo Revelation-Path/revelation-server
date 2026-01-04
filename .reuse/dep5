@@ -1,0 +1,8 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: revelation-server
+Upstream-Contact: Revelation Team
+Source: https://github.com/Revelation-Path/revelation-server
+
+Files: .sqlx/*
+Copyright: 2025-2026 Revelation Team
+License: MIT
