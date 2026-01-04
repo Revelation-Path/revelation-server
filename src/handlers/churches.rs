@@ -9,8 +9,9 @@ use axum::{
 };
 use masterror::prelude::*;
 use revelation_church::{
-    Church, CreateChurch, JoinChurch, Membership, UpdateChurch, UpdateMemberRole
+    Church, ChurchRole, CreateChurch, JoinChurch, Membership, UpdateChurch, UpdateMemberRole
 };
+use revelation_user::Claims;
 use uuid::Uuid;
 
 use crate::state::AppState;
@@ -28,11 +29,16 @@ pub fn routes() -> Router<AppState> {
         )
 }
 
+/// Create a new church. The authenticated user becomes the admin.
 async fn create_church(
     State(state): State<AppState>,
-    Json(payload): Json<CreateChurchRequest>
+    claims: Claims,
+    Json(payload): Json<CreateChurch>
 ) -> AppResult<Json<Church>> {
     let id = Uuid::now_v7();
+    let admin_id = claims.user_id();
+
+    let mut tx = state.pool.begin().await?;
 
     let church = sqlx::query_as!(
         Church,
@@ -42,15 +48,15 @@ async fn create_church(
         RETURNING id, name, city, address, confession_id, admin_id, latitude, longitude, created_at
         "#,
         id,
-        payload.church.name,
-        payload.church.city,
-        payload.church.address,
-        payload.church.confession_id,
-        payload.admin_id,
-        payload.church.latitude,
-        payload.church.longitude
+        payload.name,
+        payload.city,
+        payload.address,
+        payload.confession_id,
+        admin_id,
+        payload.latitude,
+        payload.longitude
     )
-    .fetch_one(&state.pool)
+    .fetch_one(&mut *tx)
     .await?;
 
     sqlx::query!(
@@ -59,20 +65,15 @@ async fn create_church(
         VALUES ($1, $2, $3, 'admin')
         "#,
         Uuid::now_v7(),
-        payload.admin_id,
+        admin_id,
         id
     )
-    .execute(&state.pool)
+    .execute(&mut *tx)
     .await?;
 
-    Ok(Json(church))
-}
+    tx.commit().await?;
 
-#[derive(serde::Deserialize)]
-pub struct CreateChurchRequest {
-    admin_id: Uuid,
-    #[serde(flatten)]
-    church:   CreateChurch
+    Ok(Json(church))
 }
 
 async fn get_church(
@@ -94,11 +95,15 @@ async fn get_church(
     Ok(Json(church))
 }
 
+/// Update church. Only admin can update.
 async fn update_church(
     State(state): State<AppState>,
+    claims: Claims,
     Path(church_id): Path<Uuid>,
     Json(payload): Json<UpdateChurch>
 ) -> AppResult<Json<Church>> {
+    let user_id = claims.user_id();
+
     let church = sqlx::query_as!(
         Church,
         r#"
@@ -107,17 +112,19 @@ async fn update_church(
             address = COALESCE($3, address),
             latitude = COALESCE($4, latitude),
             longitude = COALESCE($5, longitude)
-        WHERE id = $1
+        WHERE id = $1 AND admin_id = $6
         RETURNING id, name, city, address, confession_id, admin_id, latitude, longitude, created_at
         "#,
         church_id,
         payload.name,
         payload.address,
         payload.latitude,
-        payload.longitude
+        payload.longitude,
+        user_id
     )
-    .fetch_one(&state.pool)
-    .await?;
+    .fetch_optional(&state.pool)
+    .await?
+    .ok_or_else(|| AppError::forbidden("Not authorized to update this church"))?;
 
     Ok(Json(church))
 }
@@ -155,16 +162,19 @@ pub struct MemberWithUser {
     user_id:   Uuid,
     user_name: Option<String>,
     church_id: Uuid,
-    role:      revelation_church::ChurchRole,
+    role:      ChurchRole,
     joined_at: chrono::DateTime<chrono::Utc>
 }
 
+/// Join a church. User joins as the role specified (default: guest).
 async fn join_church(
     State(state): State<AppState>,
+    claims: Claims,
     Path(church_id): Path<Uuid>,
-    Json(payload): Json<JoinChurchRequest>
+    Json(payload): Json<JoinChurch>
 ) -> AppResult<Json<Membership>> {
     let id = Uuid::now_v7();
+    let user_id = claims.user_id();
 
     let membership = sqlx::query_as!(
         Membership,
@@ -174,9 +184,9 @@ async fn join_church(
         RETURNING id, user_id, church_id, role as "role: _", joined_at
         "#,
         id,
-        payload.user_id,
+        user_id,
         church_id,
-        payload.join.role as _
+        payload.role as _
     )
     .fetch_one(&state.pool)
     .await?;
@@ -184,18 +194,28 @@ async fn join_church(
     Ok(Json(membership))
 }
 
-#[derive(serde::Deserialize)]
-pub struct JoinChurchRequest {
-    user_id: Uuid,
-    #[serde(flatten)]
-    join:    JoinChurch
-}
-
+/// Update member role. Only admin or pastor can change roles.
 async fn update_member_role(
     State(state): State<AppState>,
-    Path((church_id, user_id)): Path<(Uuid, Uuid)>,
+    claims: Claims,
+    Path((church_id, target_user_id)): Path<(Uuid, Uuid)>,
     Json(payload): Json<UpdateMemberRole>
 ) -> AppResult<Json<Membership>> {
+    let user_id = claims.user_id();
+
+    let caller_role = sqlx::query_scalar!(
+        r#"SELECT role as "role: ChurchRole" FROM memberships WHERE church_id = $1 AND user_id = $2"#,
+        church_id,
+        user_id
+    )
+    .fetch_optional(&state.pool)
+    .await?
+    .ok_or_else(|| AppError::forbidden("You are not a member of this church"))?;
+
+    if !matches!(caller_role, ChurchRole::Admin | ChurchRole::Pastor) {
+        return Err(AppError::forbidden("Only admin or pastor can change roles"));
+    }
+
     let membership = sqlx::query_as!(
         Membership,
         r#"
@@ -204,7 +224,7 @@ async fn update_member_role(
         RETURNING id, user_id, church_id, role as "role: _", joined_at
         "#,
         church_id,
-        user_id,
+        target_user_id,
         payload.role as _
     )
     .fetch_one(&state.pool)
