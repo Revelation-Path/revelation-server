@@ -68,4 +68,4 @@ utoipa-swagger-ui = { version = "9", features = ["axum"] }
 entity-derive = "0.2"
 async-trait = "0.1"
 clap = { version = "4", features = ["derive"] }
-jsonwebtoken = "10"
+jsonwebtoken = { version = "10", features = ["rust_crypto"] }
