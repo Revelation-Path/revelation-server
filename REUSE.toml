@@ -1,0 +1,10 @@
+version = 1
+SPDX-PackageName = "revelation-server"
+SPDX-PackageSupplier = "Revelation Team"
+SPDX-PackageDownloadLocation = "https://github.com/Revelation-Path/revelation-server"
+
+[[annotations]]
+path = ".sqlx/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025-2026 Revelation Team"
+SPDX-License-Identifier = "MIT"
