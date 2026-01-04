@@ -1,6 +1,9 @@
+-- SPDX-FileCopyrightText: 2025-2026 Revelation Team
+--
+-- SPDX-License-Identifier: MIT
+
 -- Bible pericopes (section headings)
 -- Each pericope marks a thematic section starting at a specific verse
-
 CREATE TABLE bible_pericopes (
     id SERIAL PRIMARY KEY,
     book_id SMALLINT NOT NULL REFERENCES bible_books(id),
@@ -9,17 +12,11 @@ CREATE TABLE bible_pericopes (
     heading TEXT NOT NULL,
     UNIQUE(book_id, chapter, verse, heading)
 );
-
 CREATE INDEX idx_pericopes_book_chapter ON bible_pericopes(book_id, chapter);
-
 -- Chapter verse counts (for displaying "X verses")
 CREATE TABLE bible_chapter_info (
-    book_id SMALLINT NOT NULL REFERENCES bible_books(id),
-    chapter SMALLINT NOT NULL,
     verse_count SMALLINT NOT NULL,
     PRIMARY KEY (book_id, chapter)
-);
-
 -- Genesis chapter info
 INSERT INTO bible_chapter_info (book_id, chapter, verse_count) VALUES
     (1, 1, 31), (1, 2, 25), (1, 3, 24), (1, 4, 26), (1, 5, 32),
@@ -32,7 +29,6 @@ INSERT INTO bible_chapter_info (book_id, chapter, verse_count) VALUES
     (1, 36, 43), (1, 37, 36), (1, 38, 30), (1, 39, 23), (1, 40, 23),
     (1, 41, 57), (1, 42, 38), (1, 43, 34), (1, 44, 34), (1, 45, 28),
     (1, 46, 34), (1, 47, 31), (1, 48, 22), (1, 49, 33), (1, 50, 26);
-
 -- Genesis pericopes (sample data)
 INSERT INTO bible_pericopes (book_id, chapter, verse, heading) VALUES
     -- Genesis
@@ -126,24 +122,16 @@ INSERT INTO bible_pericopes (book_id, chapter, verse, heading) VALUES
     (1, 49, 29, 'Смерть Иакова'),
     (1, 50, 1, 'Погребение Иакова'),
     (1, 50, 15, 'Последние годы Иосифа');
-
 -- Bible footnotes (cross-references and notes)
 -- Each footnote is attached to a specific verse
 CREATE TABLE bible_footnotes (
-    id SERIAL PRIMARY KEY,
-    book_id SMALLINT NOT NULL REFERENCES bible_books(id),
-    chapter SMALLINT NOT NULL,
     verse SMALLINT NOT NULL,
     marker CHAR(1) NOT NULL DEFAULT '*',
     content TEXT NOT NULL,
     UNIQUE(book_id, chapter, verse, marker)
-);
-
 CREATE INDEX idx_footnotes_book_chapter ON bible_footnotes(book_id, chapter);
-
 -- Cross-references (parallel passages)
 CREATE TABLE bible_cross_refs (
-    id SERIAL PRIMARY KEY,
     from_book_id SMALLINT NOT NULL REFERENCES bible_books(id),
     from_chapter SMALLINT NOT NULL,
     from_verse SMALLINT NOT NULL,
@@ -151,7 +139,5 @@ CREATE TABLE bible_cross_refs (
     to_chapter SMALLINT NOT NULL,
     to_verse_start SMALLINT NOT NULL,
     to_verse_end SMALLINT
-);
-
 CREATE INDEX idx_cross_refs_from ON bible_cross_refs(from_book_id, from_chapter, from_verse);
 CREATE INDEX idx_cross_refs_to ON bible_cross_refs(to_book_id, to_chapter);

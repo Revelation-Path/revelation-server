@@ -1,5 +1,8 @@
--- Revelation Database Schema
+-- SPDX-FileCopyrightText: 2025-2026 Revelation Team
+--
+-- SPDX-License-Identifier: MIT
 
+-- Revelation Database Schema
 -- Enums
 CREATE TYPE gender AS ENUM ('male', 'female');
 CREATE TYPE testament AS ENUM ('old', 'new');
@@ -7,7 +10,6 @@ CREATE TYPE church_role AS ENUM ('guest', 'member', 'deacon', 'elder', 'pastor',
 CREATE TYPE post_type AS ENUM ('sermon', 'discussion', 'testimony', 'prayer', 'event');
 CREATE TYPE payment_status AS ENUM ('pending', 'processing', 'completed', 'failed', 'refunded');
 CREATE TYPE payment_type AS ENUM ('donation', 'subscription', 'one_time');
-
 -- Religions and Confessions
 CREATE TABLE religions (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -15,16 +17,11 @@ CREATE TABLE religions (
     name_ru VARCHAR(100) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 CREATE TABLE confessions (
-    id UUID PRIMARY KEY DEFAULT uuidv7(),
     religion_id UUID NOT NULL REFERENCES religions(id),
     name VARCHAR(100) NOT NULL,
-    name_ru VARCHAR(100) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE(religion_id, name)
-);
-
 -- Users
 CREATE TABLE users (
     id UUID PRIMARY KEY,
@@ -36,16 +33,11 @@ CREATE TABLE users (
     phone VARCHAR(20) UNIQUE,
     telegram_id BIGINT UNIQUE,
     notification_enabled BOOLEAN NOT NULL DEFAULT true,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
 CREATE INDEX idx_users_telegram_id ON users(telegram_id) WHERE telegram_id IS NOT NULL;
 CREATE INDEX idx_users_email ON users(email) WHERE email IS NOT NULL;
-
 -- Churches
 CREATE TABLE churches (
-    id UUID PRIMARY KEY DEFAULT uuidv7(),
     name VARCHAR(200) NOT NULL,
     city VARCHAR(100) NOT NULL,
     address VARCHAR(500),
@@ -53,25 +45,17 @@ CREATE TABLE churches (
     admin_id UUID NOT NULL REFERENCES users(id),
     latitude DOUBLE PRECISION,
     longitude DOUBLE PRECISION,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
 CREATE INDEX idx_churches_city ON churches(city);
 CREATE INDEX idx_churches_confession ON churches(confession_id);
-
 -- Memberships
 CREATE TABLE memberships (
-    id UUID PRIMARY KEY DEFAULT uuidv7(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     church_id UUID NOT NULL REFERENCES churches(id) ON DELETE CASCADE,
     role church_role NOT NULL DEFAULT 'guest',
     joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE(user_id, church_id)
-);
-
 CREATE INDEX idx_memberships_church ON memberships(church_id);
 CREATE INDEX idx_memberships_user ON memberships(user_id);
-
 -- Bible
 CREATE TABLE bible_books (
     id SMALLINT PRIMARY KEY,
@@ -80,8 +64,6 @@ CREATE TABLE bible_books (
     abbreviation VARCHAR(10) NOT NULL,
     testament testament NOT NULL,
     chapters_count SMALLINT NOT NULL
-);
-
 CREATE TABLE bible_verses (
     id SERIAL PRIMARY KEY,
     book_id SMALLINT NOT NULL REFERENCES bible_books(id),
@@ -90,79 +72,43 @@ CREATE TABLE bible_verses (
     text TEXT NOT NULL,
     text_search TSVECTOR GENERATED ALWAYS AS (to_tsvector('russian', text)) STORED,
     UNIQUE(book_id, chapter, verse)
-);
-
 CREATE INDEX idx_verses_book_chapter ON bible_verses(book_id, chapter);
 CREATE INDEX idx_verses_text_search ON bible_verses USING GIN(text_search);
-
 -- Word index for symphony (concordance)
 CREATE TABLE bible_word_index (
-    id SERIAL PRIMARY KEY,
     word VARCHAR(100) NOT NULL,
     verse_id INTEGER NOT NULL REFERENCES bible_verses(id) ON DELETE CASCADE,
     position SMALLINT NOT NULL
-);
-
 CREATE INDEX idx_word_index_word ON bible_word_index(word);
-
 -- Daily readings (Bible reading plan)
 CREATE TABLE daily_readings (
-    id UUID PRIMARY KEY DEFAULT uuidv7(),
     day_of_year SMALLINT NOT NULL UNIQUE CHECK (day_of_year >= 1 AND day_of_year <= 366),
     date DATE NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
 CREATE TABLE daily_reading_verses (
-    id UUID PRIMARY KEY DEFAULT uuidv7(),
     daily_reading_id UUID NOT NULL REFERENCES daily_readings(id) ON DELETE CASCADE,
     verse_id INTEGER NOT NULL REFERENCES bible_verses(id),
     position SMALLINT NOT NULL,
     UNIQUE(daily_reading_id, verse_id)
-);
-
 -- Verse responses (user thoughts on daily readings)
 CREATE TABLE verse_responses (
-    id UUID PRIMARY KEY DEFAULT uuidv7(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    daily_reading_id UUID NOT NULL REFERENCES daily_readings(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE(user_id, daily_reading_id)
-);
-
 CREATE INDEX idx_verse_responses_reading ON verse_responses(daily_reading_id);
-
 -- Posts (feed)
 CREATE TABLE posts (
-    id UUID PRIMARY KEY DEFAULT uuidv7(),
     author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     church_id UUID REFERENCES churches(id) ON DELETE CASCADE,
     post_type post_type NOT NULL,
     title VARCHAR(300) NOT NULL,
-    content TEXT NOT NULL,
     media_urls TEXT[] NOT NULL DEFAULT '{}',
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
 CREATE INDEX idx_posts_church ON posts(church_id);
 CREATE INDEX idx_posts_created ON posts(created_at DESC);
-
 -- Post comments
 CREATE TABLE post_comments (
-    id UUID PRIMARY KEY DEFAULT uuidv7(),
     post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
-    author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    content TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
 CREATE INDEX idx_comments_post ON post_comments(post_id);
-
 -- Payments
 CREATE TABLE payments (
-    id UUID PRIMARY KEY DEFAULT uuidv7(),
     user_id UUID NOT NULL REFERENCES users(id),
     church_id UUID REFERENCES churches(id),
     payment_type payment_type NOT NULL,
@@ -171,34 +117,23 @@ CREATE TABLE payments (
     status payment_status NOT NULL DEFAULT 'pending',
     provider VARCHAR(50) NOT NULL,
     provider_payment_id VARCHAR(255),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     completed_at TIMESTAMPTZ
-);
-
 CREATE INDEX idx_payments_user ON payments(user_id);
 CREATE INDEX idx_payments_church ON payments(church_id) WHERE church_id IS NOT NULL;
-
 -- Payment cards
 CREATE TABLE payment_cards (
-    id UUID PRIMARY KEY DEFAULT uuidv7(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     last_four VARCHAR(4) NOT NULL,
     brand VARCHAR(20) NOT NULL,
     exp_month SMALLINT NOT NULL,
     exp_year SMALLINT NOT NULL,
     is_default BOOLEAN NOT NULL DEFAULT false,
     provider_card_id VARCHAR(255) NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
 CREATE INDEX idx_cards_user ON payment_cards(user_id);
-
 -- Initial data: Religions and Confessions
 INSERT INTO religions (id, name, name_ru) VALUES
     ('019389a0-0000-7000-8000-000000000001', 'christianity', 'Христианство'),
     ('019389a0-0000-7000-8000-000000000002', 'islam', 'Ислам'),
     ('019389a0-0000-7000-8000-000000000003', 'judaism', 'Иудаизм');
-
 INSERT INTO confessions (id, religion_id, name, name_ru) VALUES
     ('019389a0-0001-7000-8000-000000000001', '019389a0-0000-7000-8000-000000000001', 'baptist', 'Баптисты'),
     ('019389a0-0001-7000-8000-000000000002', '019389a0-0000-7000-8000-000000000001', 'orthodox', 'Православные'),
@@ -207,7 +142,6 @@ INSERT INTO confessions (id, religion_id, name, name_ru) VALUES
     ('019389a0-0001-7000-8000-000000000005', '019389a0-0000-7000-8000-000000000001', 'adventist', 'Адвентисты'),
     ('019389a0-0001-7000-8000-000000000006', '019389a0-0000-7000-8000-000000000001', 'lutheran', 'Лютеране'),
     ('019389a0-0001-7000-8000-000000000007', '019389a0-0000-7000-8000-000000000001', 'reformed', 'Реформаты');
-
 -- Bible books (Synodal translation)
 INSERT INTO bible_books (id, name, name_ru, abbreviation, testament, chapters_count) VALUES
     -- Old Testament
@@ -278,7 +212,6 @@ INSERT INTO bible_books (id, name, name_ru, abbreviation, testament, chapters_co
     (64, '3 John', '3 Иоанна', '3Ин', 'new', 1),
     (65, 'Jude', 'Иуды', 'Иуд', 'new', 1),
     (66, 'Revelation', 'Откровение', 'Откр', 'new', 22);
-
 -- Trigger for updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -287,13 +220,9 @@ BEGIN
     RETURN NEW;
 END;
 $$ language 'plpgsql';
-
 CREATE TRIGGER update_users_updated_at
     BEFORE UPDATE ON users
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER update_posts_updated_at
     BEFORE UPDATE ON posts
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();

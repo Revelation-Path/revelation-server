@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025-2026 Revelation Team
+//
+// SPDX-License-Identifier: MIT
+
 use axum::{Router, routing::get};
 use utoipa::{
     Modify, OpenApi,

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025-2026 Revelation Team
+//
+// SPDX-License-Identifier: MIT
+
 use revelation_server::{BibleService, SongbookService};
 use sqlx::PgPool;
 

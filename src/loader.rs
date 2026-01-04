@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025-2026 Revelation Team
+//
+// SPDX-License-Identifier: MIT
+
 //! Bible data loader from JSON files.
 
 use std::path::Path;
@@ -385,7 +389,7 @@ impl CrossRefLoader {
 
             let weight: i32 = parts[2].parse().unwrap_or(0);
 
-            if let Err(_) = sqlx::query!(
+            if sqlx::query!(
                 r#"
                 INSERT INTO bible_cross_refs
                     (from_book_id, from_chapter, from_verse,
@@ -403,6 +407,7 @@ impl CrossRefLoader {
             )
             .execute(&self.pool)
             .await
+            .is_err()
             {
                 stats.skipped += 1;
                 continue;
@@ -471,6 +476,10 @@ pub struct CrossRefStats {
 
 impl std::fmt::Display for CrossRefStats {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Loaded {} cross-references ({} skipped)", self.loaded, self.skipped)
+        write!(
+            f,
+            "Loaded {} cross-references ({} skipped)",
+            self.loaded, self.skipped
+        )
     }
 }

@@ -1,7 +1,10 @@
+// SPDX-FileCopyrightText: 2025-2026 Revelation Team
+//
+// SPDX-License-Identifier: MIT
+
 use masterror::AppResult;
 use revelation_bible::{
-    CrossReference, CrossReferenceExpanded, VerseRef,
-    ports::BibleCrossReference
+    CrossReference, CrossReferenceExpanded, VerseRef, ports::BibleCrossReference
 };
 use sqlx::PgPool;
 
@@ -185,12 +188,7 @@ impl BibleCrossReference for PgBibleCrossReference {
             .collect())
     }
 
-    async fn count_references(
-        &self,
-        book_id: i16,
-        chapter: i16,
-        verse: i16
-    ) -> AppResult<i64> {
+    async fn count_references(&self, book_id: i16, chapter: i16, verse: i16) -> AppResult<i64> {
         let result = sqlx::query_scalar!(
             r#"
             SELECT COUNT(*) as "count!"

@@ -1,6 +1,9 @@
+-- SPDX-FileCopyrightText: 2025-2026 Revelation Team
+--
+-- SPDX-License-Identifier: MIT
+
 -- Fix update_songbook_count function to use explicit schema
 -- This fixes the "relation songbooks does not exist" error when search_path doesn't include public
-
 CREATE OR REPLACE FUNCTION update_songbook_count()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -15,7 +18,6 @@ BEGIN
             END IF;
             IF NEW.songbook_id IS NOT NULL THEN
                 UPDATE public.songbooks SET songs_count = songs_count + 1 WHERE id = NEW.songbook_id;
-            END IF;
         END IF;
     END IF;
     RETURN COALESCE(NEW, OLD);
