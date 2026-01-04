@@ -9,9 +9,9 @@
 
 use std::sync::Arc;
 
-use jsonwebtoken::{DecodingKey, Validation, Algorithm};
+use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use masterror::AppError;
-use revelation_user::{Claims, JwtValidator, AuthConfig};
+use revelation_user::{AuthConfig, Claims, JwtValidator};
 
 /// JWT token manager for decoding and validating tokens.
 ///
@@ -27,7 +27,7 @@ use revelation_user::{Claims, JwtValidator, AuthConfig};
 /// ```
 pub struct JwtManager {
     decoding_key: DecodingKey,
-    validation: Validation,
+    validation:   Validation
 }
 
 impl JwtManager {
@@ -43,7 +43,7 @@ impl JwtManager {
 
         Self {
             decoding_key: DecodingKey::from_secret(secret.as_bytes()),
-            validation,
+            validation
         }
     }
 }
@@ -60,7 +60,7 @@ impl JwtValidator for JwtManager {
 ///
 /// Specifies the cookie name where JWT tokens are stored.
 pub struct AppAuthConfig {
-    cookie_name: String,
+    cookie_name: String
 }
 
 impl AppAuthConfig {
@@ -72,7 +72,7 @@ impl AppAuthConfig {
     #[must_use]
     pub fn new(cookie_name: impl Into<String>) -> Self {
         Self {
-            cookie_name: cookie_name.into(),
+            cookie_name: cookie_name.into()
         }
     }
 }
@@ -96,7 +96,7 @@ impl AuthConfig for AppAuthConfig {
 #[must_use]
 pub fn create_auth_extensions(
     jwt_secret: &str,
-    cookie_name: &str,
+    cookie_name: &str
 ) -> (Arc<dyn JwtValidator>, Arc<dyn AuthConfig>) {
     let jwt: Arc<dyn JwtValidator> = Arc::new(JwtManager::new(jwt_secret));
     let config: Arc<dyn AuthConfig> = Arc::new(AppAuthConfig::new(cookie_name));
